@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>독서 활동 기록장</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    textarea {
+      height: 120px;
+      resize: vertical;
+    }
+
+    #characterCount {
+      text-align: right;
+      margin-top: 5px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 25px;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      background-color: #2f6fed;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2458bd;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>독서 활동 기록장</h1>
+
+    <!-- 반드시 자신의 Apps Script /exec 주소로 변경 -->
+    <form
+      id="readingForm"
+      method="POST"
+      action="https://script.google.com/macros/s/AKfycbwcOzmEroH_LST-na48vvhsTcJzsoEawPZwbNTS-UB6n7Iap3sD3LcvRXDZVRdBeMQ/exec"
+    >
+
+      <label for="bookTitle">책 제목</label>
+      <input
+        type="text"
+        id="bookTitle"
+        name="bookTitle"
+      >
+
+      <label for="readingMinutes">독서 시간(분)</label>
+      <input
+        type="number"
+        id="readingMinutes"
+        name="readingMinutes"
+        min="1"
+        max="180"
+        step="1"
+      >
+
+      <label for="review">한 줄 감상</label>
+      <textarea
+        id="review"
+        name="review"
+        maxlength="100"
+      ></textarea>
+
+      <div id="characterCount">0 / 100</div>
+
+      <button type="submit">기록 저장</button>
+
+    </form>
+  </div>
+
+
+  <script>
+    const form = document.getElementById("readingForm");
+    const bookTitle = document.getElementById("bookTitle");
+    const readingMinutes = document.getElementById("readingMinutes");
+    const review = document.getElementById("review");
+    const characterCount = document.getElementById("characterCount");
+
+
+    // 감상 글자 수 실시간 표시
+    review.addEventListener("input", function () {
+      characterCount.textContent = review.value.length + " / 100";
+    });
+
+
+    // 기록 저장 버튼을 눌렀을 때 검사
+    form.addEventListener("submit", function (event) {
+
+      // 1. 책 제목 공란 및 공백 검사
+      if (bookTitle.value.trim() === "") {
+        event.preventDefault();
+        alert("책 제목을 입력해 주세요.");
+        bookTitle.focus();
+        return;
+      }
+
+
+      // 2. 독서 시간 미입력 검사
+      if (readingMinutes.value.trim() === "") {
+        event.preventDefault();
+        alert("독서 시간을 입력해 주세요.");
+        readingMinutes.focus();
+        return;
+      }
+
+
+      // 입력값을 숫자로 변환
+      const minutes = Number(readingMinutes.value);
+
+
+      // 3. 독서 시간이 정수인지 검사
+      if (!Number.isInteger(minutes)) {
+        event.preventDefault();
+        alert("독서 시간은 정수로 입력해 주세요.");
+        readingMinutes.focus();
+        return;
+      }
+
+
+      // 4. 독서 시간이 1~180인지 검사
+      if (minutes < 1 || minutes > 180) {
+        event.preventDefault();
+        alert("독서 시간은 1~180분 사이로 입력해 주세요.");
+        readingMinutes.focus();
+        return;
+      }
+
+
+      // 앞뒤 공백을 제외한 감상 내용
+      const reviewText = review.value.trim();
+
+
+      // 5. 감상 공란 및 공백 검사
+      if (reviewText === "") {
+        event.preventDefault();
+        alert("한 줄 감상을 입력해 주세요.");
+        review.focus();
+        return;
+      }
+
+
+      // 6. 감상 글자 수 검사
+      if (reviewText.length < 10 || reviewText.length > 100) {
+        event.preventDefault();
+        alert("한 줄 감상은 10~100자로 입력해 주세요.");
+        review.focus();
+        return;
+      }
+
+    });
+  </script>
+
+</body>
+</html>

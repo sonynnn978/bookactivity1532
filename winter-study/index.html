@@ -11,15 +11,16 @@ let all=items(),map={},base=today()>start?today():start;
 let q={math:all.filter(x=>x.type==='math'&&!state.done[x.id]),review:all.filter(x=>x.type==='review'&&!state.done[x.id]),ko:all.filter(x=>x.type==='ko'&&!state.done[x.id]),n:all.filter(x=>x.type==='n'&&!state.done[x.id]),custom:all.filter(x=>x.type==='custom'&&!state.done[x.id])};
 for(let x of all)if(state.done[x.id])(map[state.done[x.id]]??=[]).push(x);
 let subject=x=>x.type==='custom'?(state.custom.find(c=>c.id===x.customId)?.subject||'unclassified'):x.type==='ko'?'ko':'math';
-let weights={math:6,ko:2,en:1,other:1,unclassified:1},d=base,after=0;
+let weights={math:6,ko:2,en:1,other:1,unclassified:1},d=base,after=0;let pastMath=all.filter(x=>x.type==='math'&&state.done[x.id]&&state.done[x.id]<base).sort((a,b)=>state.done[a.id].localeCompare(state.done[b.id]));let lastMath=pastMath.length?(pastMath.at(-1).id.startsWith('m1-')?1:2):2;
 while(Object.values(q).some(z=>z.length)&&after++<1500){
 let limit=capacity(d);if(limit>0){
 let a=map[d]??=[],used=a.reduce((n,x)=>n+hours(x,d),0),spent={math:0,ko:0,en:0,other:0,unclassified:0};for(let x of a)spent[subject(x)]+=hours(x,d);
+for(let x of a.filter(x=>x.type==='math'&&state.done[x.id]))lastMath=x.id.startsWith('m1-')?1:2;
 let isVac=d>=state.settings.vacStart,mathMax=isVac?state.settings.mathLimit:limit>=8?3:limit>4?2:1;
 function blocked(c){let dep=c.after;if(!dep)return false;let prior=state.custom.find(z=>z.id===dep),b=prior&&(q.custom.some(z=>z.customId===dep)||a.some(z=>z.type==='custom'&&z.customId===dep));if(dep==='builtin-math')b=q.math.length||a.some(z=>z.type==='math');if(dep==='builtin-review')b=q.review.length||a.some(z=>z.type==='review');if(dep==='builtin-ko')b=q.ko.length||a.some(z=>z.type==='ko');if(dep==='builtin-n1')b=!state.settings.days[0]||!state.settings.days[1]||q.n.some(z=>z.book<2)||a.some(z=>z.type==='n'&&z.book<2);if(dep==='builtin-n2')b=state.settings.days.some(n=>!n)||q.n.length||a.some(z=>z.type==='n');return !!b}
 let guard=0;while(guard++<2000){
 let candidates=[];
-if(q.math.length&&a.filter(x=>x.type==='math').length<mathMax&&!a.some(x=>x.type==='review'))candidates.push({x:q.math[0],queue:'math',index:0});
+if(q.math.length&&a.filter(x=>x.type==='math').length<mathMax&&!a.some(x=>x.type==='review')){let target=lastMath===1?'m2-':'m1-';let i=q.math.findIndex(x=>x.id.startsWith(target));if(i<0)i=0;candidates.push({x:q.math[i],queue:'math',index:i})}
 if(d>='2027-01-11'&&!q.math.length&&!a.some(x=>x.type==='math'||x.type==='review')&&q.review.length)candidates.push({x:q.review[0],queue:'review',index:0});
 if(q.ko.length&&a.filter(x=>x.type==='ko').length<(isVac||limit>4?2:1))candidates.push({x:q.ko[0],queue:'ko',index:0});
 if(isVac){let s1=q.n.some(z=>z.book<2);let allow2=state.settings.days[0]>0&&state.settings.days[1]>0&&!a.some(z=>z.type==='n'&&z.book<2);let group=s1?[0,1]:allow2?[2,3]:[];let options=group.map(book=>({book,index:q.n.findIndex(z=>z.book===book),count:a.filter(z=>z.type==='n'&&z.book===book).length})).filter(z=>z.index>=0).sort((x,y)=>x.count-y.count);if(options.length)candidates.push({x:q.n[options[0].index],queue:'n',index:options[0].index})}
@@ -27,7 +28,7 @@ for(let c of state.custom){if(d<c.start||blocked(c))continue;let count=a.filter(
 candidates=candidates.filter(o=>used+hours(o.x,d)<=limit+1e-9);
 if(!candidates.length)break;
 candidates.sort((x,y)=>{let sx=subject(x.x),sy=subject(y.x);return (spent[sx]/weights[sx])-(spent[sy]/weights[sy])});
-let c=candidates[0],h=hours(c.x,d);if(!(h>0))break;a.push(c.x);q[c.queue].splice(c.index,1);used+=h;spent[subject(c.x)]+=h;
+let c=candidates[0],h=hours(c.x,d);if(!(h>0))break;if(c.x.type==='math')lastMath=c.x.id.startsWith('m1-')?1:2;a.push(c.x);q[c.queue].splice(c.index,1);used+=h;spent[subject(c.x)]+=h;
 }
 if(!a.length)delete map[d]
 }d=add(d,1)}
